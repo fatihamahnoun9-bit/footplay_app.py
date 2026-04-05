@@ -133,16 +133,29 @@ st.markdown(f"""
         transform: scale(1.02);
     }}
     
+    .cart-item {{
+        background: {COLORS['light']};
+        border-radius: 15px;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }}
+    
+    .payment-card {{
+        background: linear-gradient(135deg, {COLORS['success']}10, {COLORS['accent']}10);
+        border-radius: 20px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 2px solid {COLORS['success']};
+    }}
+    
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {{
         border-radius: 15px !important;
         border: 1px solid #E0E0E0 !important;
         padding: 0.8rem !important;
         font-size: 0.9rem !important;
-    }}
-    
-    .stTextInput > div > div > input:focus {{
-        border-color: {COLORS['primary']} !important;
-        box-shadow: 0 0 0 2px {COLORS['primary']}20 !important;
     }}
     
     .avatar {{
@@ -208,10 +221,28 @@ st.markdown(f"""
         padding: 1rem;
         margin: 0.5rem 0;
     }}
+    
+    .btn-pay {{
+        background: linear-gradient(135deg, {COLORS['success']}, #02C39A);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 0.8rem 1.5rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s;
+    }}
+    
+    .btn-pay:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(6,214,160,0.3);
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 # Initialisation des sessions
+if 'cart' not in st.session_state:
+    st.session_state.cart = []
 if 'reservations' not in st.session_state:
     st.session_state.reservations = []
 if 'current_tab' not in st.session_state:
@@ -235,38 +266,17 @@ if 'avis' not in st.session_state:
         {"user": "Amine", "note": 4, "commentaire": "Bien mais peut mieux faire", "date": "28/03/2026"},
     ]
 
-# Données des terrains - TOUTES LES VILLES DU MAROC
+# Données des terrains
 TERRAINS = [
-    # Meknès
     {"id": 1, "nom": "Complexe Sportif Al Massira", "ville": "Meknès", "prix": 200, "type": "Pelouse synthétique", "note": 4.7, "image": "🏟️", "adresse": "Route d'El Hajeb, Meknès", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Cafétéria"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h"]},
     {"id": 2, "nom": "Stade d'Honneur", "ville": "Meknès", "prix": 250, "type": "Pelouse naturelle", "note": 4.9, "image": "🏆", "adresse": "Avenue des FAR, Meknès", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Buvette", "Terrain annexe"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
     {"id": 3, "nom": "Foot Center Meknès", "ville": "Meknès", "prix": 180, "type": "Pelouse synthétique", "note": 4.6, "image": "⚽", "adresse": "Bd My Ismail, Meknès", "equipements": ["Éclairage", "Vestiaires", "Parking", "Cafétéria"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Casablanca
-    {"id": 4, "nom": "Arena Casablanca", "ville": "Casablanca", "prix": 300, "type": "Pelouse synthétique Premium", "note": 4.9, "image": "⚡", "adresse": "Bd Mohammed VI, Casablanca", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Cafétéria", "Sauna", "Wifi"], "horaires": ["9h", "10h", "11h", "12h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h", "23h"]},
-    {"id": 5, "nom": "Stade Mohamed V", "ville": "Casablanca", "prix": 350, "type": "Pelouse naturelle", "note": 5.0, "image": "🏟️", "adresse": "Bd de l'Ocean Atlantique, Casablanca", "equipements": ["Éclairage LED Pro", "Vestiaires Luxe", "Parking VIP", "Cafétéria", "Tribunes", "Sonorisation"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Rabat
-    {"id": 6, "nom": "Football Center Rabat", "ville": "Rabat", "prix": 220, "type": "Pelouse synthétique", "note": 4.7, "image": "⚽", "adresse": "Avenue Annakhil, Rabat", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Buvette"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h"]},
-    {"id": 7, "nom": "Prince Héritier Stadium", "ville": "Rabat", "prix": 280, "type": "Pelouse naturelle", "note": 4.8, "image": "🏆", "adresse": "Bd Moulay Youssef, Rabat", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Cafétéria", "Tribunes"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Tanger
-    {"id": 8, "nom": "Sporting Tanger", "ville": "Tanger", "prix": 200, "type": "Pelouse synthétique", "note": 4.6, "image": "🥅", "adresse": "Route de Tétouan, Tanger", "equipements": ["Éclairage LED", "Vestiaires", "Parking"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    {"id": 9, "nom": "Ibn Batouta Arena", "ville": "Tanger", "prix": 260, "type": "Pelouse naturelle", "note": 4.8, "image": "🏟️", "adresse": "Bd du 9 Avril, Tanger", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Cafétéria", "Tribunes"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h"]},
-    
-    # Marrakech
-    {"id": 10, "nom": "Pitch Marrakech", "ville": "Marrakech", "prix": 240, "type": "Pelouse synthétique Premium", "note": 4.9, "image": "💎", "adresse": "Bd Abdelkrim Khattabi, Marrakech", "equipements": ["Éclairage LED Pro", "Vestiaires Luxe", "Parking VIP", "Cafétéria", "Sauna", "Piscine"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h", "23h"]},
-    {"id": 11, "nom": "Marrakech Sports Center", "ville": "Marrakech", "prix": 200, "type": "Pelouse synthétique", "note": 4.6, "image": "⚽", "adresse": "Route de Safi, Marrakech", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Buvette"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Fès
-    {"id": 12, "nom": "Elite Center Fès", "ville": "Fès", "prix": 190, "type": "Pelouse synthétique", "note": 4.5, "image": "🎯", "adresse": "Route d'Imouzzer, Fès", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Cafétéria"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    {"id": 13, "nom": "Fès Sport Complex", "ville": "Fès", "prix": 220, "type": "Pelouse naturelle", "note": 4.7, "image": "🏆", "adresse": "Bd Allal El Fassi, Fès", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Cafétéria", "Tribunes"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Agadir
-    {"id": 14, "nom": "Agadir Beach Foot", "ville": "Agadir", "prix": 210, "type": "Pelouse synthétique", "note": 4.6, "image": "🏖️", "adresse": "Bd du 20 Août, Agadir", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Cafétéria", "Vue sur mer"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
-    
-    # Tétouan
-    {"id": 15, "nom": "Tétouan Foot Arena", "ville": "Tétouan", "prix": 180, "type": "Pelouse synthétique", "note": 4.4, "image": "⚽", "adresse": "Route de Martil, Tétouan", "equipements": ["Éclairage LED", "Vestiaires", "Parking"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]}
+    {"id": 4, "nom": "Arena Casablanca", "ville": "Casablanca", "prix": 300, "type": "Pelouse synthétique Premium", "note": 4.9, "image": "⚡", "adresse": "Bd Mohammed VI, Casablanca", "equipements": ["Éclairage LED Pro", "Vestiaires VIP", "Parking", "Cafétéria", "Sauna"], "horaires": ["9h", "10h", "11h", "12h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h", "23h"]},
+    {"id": 5, "nom": "Football Center Rabat", "ville": "Rabat", "prix": 220, "type": "Pelouse synthétique", "note": 4.7, "image": "⚽", "adresse": "Avenue Annakhil, Rabat", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Buvette"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h"]},
+    {"id": 6, "nom": "Sporting Tanger", "ville": "Tanger", "prix": 200, "type": "Pelouse synthétique", "note": 4.6, "image": "🥅", "adresse": "Route de Tétouan, Tanger", "equipements": ["Éclairage LED", "Vestiaires", "Parking"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
+    {"id": 7, "nom": "Pitch Marrakech", "ville": "Marrakech", "prix": 240, "type": "Pelouse synthétique Premium", "note": 4.9, "image": "💎", "adresse": "Bd Abdelkrim Khattabi, Marrakech", "equipements": ["Éclairage LED Pro", "Vestiaires Luxe", "Parking VIP", "Cafétéria", "Sauna"], "horaires": ["9h", "10h", "11h", "14h", "15h", "16h", "17h", "18h", "19h", "20h", "21h", "22h", "23h"]},
+    {"id": 8, "nom": "Elite Center Fès", "ville": "Fès", "prix": 190, "type": "Pelouse synthétique", "note": 4.5, "image": "🎯", "adresse": "Route d'Imouzzer, Fès", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Cafétéria"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
+    {"id": 9, "nom": "Agadir Beach Foot", "ville": "Agadir", "prix": 210, "type": "Pelouse synthétique", "note": 4.6, "image": "🏖️", "adresse": "Bd du 20 Août, Agadir", "equipements": ["Éclairage LED", "Vestiaires", "Parking", "Cafétéria", "Vue sur mer"], "horaires": ["10h", "11h", "12h", "15h", "16h", "17h", "18h", "19h", "20h", "21h"]},
 ]
 
 def show_toast(message):
@@ -278,16 +288,15 @@ def reservation_interface():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        villes = ["Toutes", "Meknès", "Casablanca", "Rabat", "Tanger", "Marrakech", "Fès", "Agadir", "Tétouan"]
+        villes = ["Toutes", "Meknès", "Casablanca", "Rabat", "Tanger", "Marrakech", "Fès", "Agadir"]
         ville = st.selectbox("📍 Ville", villes)
     
     with col2:
         date = st.date_input("📅 Date", datetime.now())
     
-    # Filtrage des terrains
     terrains_filtered = TERRAINS if ville == "Toutes" else [t for t in TERRAINS if t["ville"] == ville]
     
-    st.markdown(f"**{len(terrains_filtered)} terrains disponibles à {ville if ville != 'Toutes' else 'tout le Maroc'}**")
+    st.markdown(f"**{len(terrains_filtered)} terrains disponibles**")
     
     for terrain in terrains_filtered:
         with st.container():
@@ -308,8 +317,7 @@ def reservation_interface():
                 <div style='margin-top: 0.5rem;'>
             """, unsafe_allow_html=True)
             
-            # Équipements
-            for equip in terrain['equipements']:
+            for equip in terrain['equipements'][:3]:
                 st.markdown(f"<span class='badge-elegant'>✓ {equip}</span>", unsafe_allow_html=True)
             
             st.markdown(f"""
@@ -319,19 +327,82 @@ def reservation_interface():
                     <div style='display: flex; flex-wrap: wrap; gap: 0.3rem;'>
             """, unsafe_allow_html=True)
             
-            for heure in terrain['horaires']:
-                if st.button(heure, key=f"{terrain['id']}_{heure}", use_container_width=True):
-                    show_toast(f"✅ Réservé {terrain['nom']} à {heure} - {terrain['prix']} DH")
-                    st.session_state.reservations.append({
-                        "terrain": terrain['nom'], 
+            for heure in terrain['horaires'][:6]:
+                if st.button(f"{heure}", key=f"{terrain['id']}_{heure}", use_container_width=True):
+                    # Ajouter au panier
+                    st.session_state.cart.append({
+                        "id": terrain['id'],
+                        "terrain": terrain['nom'],
                         "ville": terrain['ville'],
-                        "heure": heure, 
-                        "date": date.strftime("%d/%m/%Y"), 
-                        "prix": terrain['prix']
+                        "heure": heure,
+                        "date": date.strftime("%d/%m/%Y"),
+                        "prix": terrain['prix'],
+                        "image": terrain['image']
                     })
+                    show_toast(f"✅ Ajouté au panier : {terrain['nom']} à {heure}")
                     st.rerun()
             
             st.markdown("</div></div></div>", unsafe_allow_html=True)
+
+def cart_interface():
+    st.markdown("### 🛒 Mon panier")
+    
+    if not st.session_state.cart:
+        st.info("🛍️ Votre panier est vide. Réservez un terrain pour commencer !")
+        return
+    
+    total = 0
+    for i, item in enumerate(st.session_state.cart):
+        col1, col2, col3, col4 = st.columns([1, 3, 2, 1])
+        with col1:
+            st.markdown(f"<div style='font-size: 2rem;'>{item['image']}</div>", unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"**{item['terrain']}**<br>{item['ville']} - {item['date']}", unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"🕐 {item['heure']}", unsafe_allow_html=True)
+        with col4:
+            if st.button(f"🗑️", key=f"remove_{i}"):
+                st.session_state.cart.pop(i)
+                st.rerun()
+        total += item['prix']
+    
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.markdown(f"""
+        <div class='payment-card'>
+            <h3>💰 Total à payer</h3>
+            <h1 style='color: {COLORS['success']};'>{total} DH</h1>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("### 💳 Informations de paiement")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        nom_carte = st.text_input("Nom sur la carte", placeholder="YASSINE BENANI")
+        numero_carte = st.text_input("Numéro de carte", placeholder="1234 5678 9012 3456")
+    with col2:
+        date_exp = st.text_input("Date d'expiration", placeholder="MM/AA")
+        cvv = st.text_input("CVV", placeholder="123", type="password")
+    
+    if st.button("💳 Payer maintenant", use_container_width=True):
+        if nom_carte and numero_carte and date_exp and cvv:
+            for item in st.session_state.cart:
+                st.session_state.reservations.append({
+                    "terrain": item['terrain'],
+                    "ville": item['ville'],
+                    "date": item['date'],
+                    "heure": item['heure'],
+                    "prix": item['prix'],
+                    "image": item['image']
+                })
+            show_toast(f"🎉 Paiement réussi ! {len(st.session_state.cart)} réservation(s) confirmée(s)")
+            st.session_state.cart = []
+            st.rerun()
+        else:
+            st.warning("Veuillez remplir toutes les informations de paiement")
 
 def contact_interface():
     st.markdown("### 📞 Contactez-nous")
@@ -350,7 +421,6 @@ def contact_interface():
             <h4 style='color: #6C5CE7;'>🌐 Réseaux sociaux</h4>
             <p>📘 Facebook : @FootPlay.ma</p>
             <p>📸 Instagram : @footplay_ma</p>
-            <p>🐦 Twitter : @FootPlay_ma</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -368,7 +438,7 @@ def contact_interface():
         if st.button("📨 Envoyer le message", use_container_width=True):
             if nom and message:
                 st.session_state.contact_messages.append({"nom": nom, "email": email, "message": message, "date": datetime.now()})
-                show_toast("✅ Message envoyé ! Nous vous répondrons rapidement.")
+                show_toast("✅ Message envoyé !")
                 st.rerun()
             else:
                 st.warning("Veuillez remplir votre nom et message")
@@ -379,20 +449,18 @@ def annonces_interface():
     with st.expander("➕ Proposer une annonce", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            titre = st.text_input("Titre de l'annonce", placeholder="ex: Tournoi du week-end")
+            titre = st.text_input("Titre", placeholder="ex: Tournoi du week-end")
             date = st.text_input("Date", placeholder="ex: 15 Avril 2026")
         with col2:
-            lieu = st.selectbox("Lieu", ["Meknès", "Casablanca", "Rabat", "Tanger", "Marrakech", "Fès", "Agadir", "Tétouan"])
+            lieu = st.selectbox("Lieu", ["Meknès", "Casablanca", "Rabat", "Tanger", "Marrakech", "Fès", "Agadir"])
             prix = st.number_input("Prix par personne (DH)", min_value=0, value=50)
         places = st.number_input("Nombre de places", min_value=1, value=8, max_value=30)
         
-        if st.button("📢 Publier l'annonce", use_container_width=True):
+        if st.button("📢 Publier", use_container_width=True):
             if titre:
                 st.session_state.annonces.insert(0, {"titre": titre, "date": date, "lieu": lieu, "places": places, "prix": prix})
                 show_toast("✅ Annonce publiée !")
                 st.rerun()
-            else:
-                st.warning("Veuillez entrer un titre")
     
     st.markdown("---")
     
@@ -412,8 +480,8 @@ def annonces_interface():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button(f"👍 Je participe - {annonce['titre']}", key=f"participe_{i}", use_container_width=True):
-            show_toast(f"✅ Inscription confirmée pour {annonce['titre']} !")
+        if st.button(f"👍 Participer", key=f"participe_{i}", use_container_width=True):
+            show_toast(f"✅ Inscription confirmée !")
             st.rerun()
 
 def profil_interface():
@@ -434,7 +502,7 @@ def profil_interface():
         with col2:
             phone = st.text_input("Téléphone", placeholder="06 XX XX XX XX")
         
-        if st.button("🚀 Se connecter / S'inscrire", use_container_width=True):
+        if st.button("🚀 Se connecter", use_container_width=True):
             if name:
                 st.session_state.user = {'name': name, 'phone': phone, 'is_logged': True}
                 show_toast(f"✅ Bienvenue {name} !")
@@ -457,13 +525,13 @@ def profil_interface():
             for res in st.session_state.reservations:
                 st.markdown(f"""
                 <div class='terrain-card'>
-                    <div style='display: flex; justify-content: space-between;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center;'>
                         <div>
                             <strong>{res['terrain']}</strong><br>
                             📍 {res.get('ville', 'Maroc')}<br>
                             📅 {res['date']} à {res['heure']}
                         </div>
-                        <div style='color: {COLORS['primary']}; font-weight: bold;'>{res['prix']} DH</div>
+                        <div style='color: {COLORS['success']}; font-weight: bold;'>{res['prix']} DH</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -482,9 +550,9 @@ def avis_interface():
         with col1:
             note = st.select_slider("Note", options=[1, 2, 3, 4, 5], value=5)
         with col2:
-            commentaire = st.text_area("Votre commentaire", placeholder="Partagez votre expérience...", height=80)
+            commentaire = st.text_area("Commentaire", placeholder="Partagez votre expérience...", height=80)
         
-        if st.button("📝 Publier mon avis", use_container_width=True):
+        if st.button("📝 Publier", use_container_width=True):
             if commentaire:
                 st.session_state.avis.insert(0, {
                     "user": st.session_state.user['name'] if st.session_state.user['is_logged'] else "Anonyme",
@@ -494,8 +562,6 @@ def avis_interface():
                 })
                 show_toast("✅ Merci pour votre avis !")
                 st.rerun()
-            else:
-                st.warning("Veuillez écrire un commentaire")
     
     st.markdown("---")
     
@@ -503,14 +569,11 @@ def avis_interface():
         stars = "⭐" * avis['note'] + "☆" * (5 - avis['note'])
         st.markdown(f"""
         <div class='avis-card'>
-            <div style='display: flex; justify-content: space-between; align-items: center;'>
-                <div>
-                    <strong>{avis['user']}</strong>
-                    <span style='margin-left: 0.5rem; color: #FDCB6E;'>{stars}</span>
-                </div>
-                <div style='font-size: 0.7rem; color: {COLORS['text_light']};'>{avis['date']}</div>
+            <div style='display: flex; justify-content: space-between;'>
+                <div><strong>{avis['user']}</strong> {stars}</div>
+                <div style='font-size: 0.7rem;'>{avis['date']}</div>
             </div>
-            <p style='margin-top: 0.5rem; font-size: 0.9rem;'>"{avis['commentaire']}"</p>
+            <p style='margin-top: 0.5rem;'>"{avis['commentaire']}"</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -526,10 +589,11 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    menu_cols = st.columns(5)
+    menu_cols = st.columns(6)
     menu_items = [
         {"name": "🏠 Accueil", "tab": "home"},
         {"name": "🎯 Réservation", "tab": "reservation"},
+        {"name": "🛒 Panier", "tab": "cart"},
         {"name": "📞 Contact", "tab": "contact"},
         {"name": "🎉 Annonces", "tab": "annonces"},
         {"name": "👤 Profil", "tab": "profil"}
@@ -574,16 +638,19 @@ def main():
         st.markdown("### 📊 FootPlay en chiffres")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>🏟️</div><h2>15+</h2><p>Terrains</p></div>", unsafe_allow_html=True)
+            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>🏟️</div><h2>9+</h2><p>Terrains</p></div>", unsafe_allow_html=True)
         with col2:
-            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>🏙️</div><h2>8</h2><p>Villes</p></div>", unsafe_allow_html=True)
+            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>🏙️</div><h2>7</h2><p>Villes</p></div>", unsafe_allow_html=True)
         with col3:
-            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>⚽</div><h2>1000+</h2><p>Matchs</p></div>", unsafe_allow_html=True)
+            st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>⚽</div><h2>500+</h2><p>Matchs</p></div>", unsafe_allow_html=True)
         with col4:
             st.markdown("<div class='card-modern' style='text-align: center;'><div style='font-size: 2rem;'>⭐</div><h2>4.7/5</h2><p>Note</p></div>", unsafe_allow_html=True)
     
     elif st.session_state.current_tab == "reservation":
         reservation_interface()
+    
+    elif st.session_state.current_tab == "cart":
+        cart_interface()
     
     elif st.session_state.current_tab == "contact":
         contact_interface()
